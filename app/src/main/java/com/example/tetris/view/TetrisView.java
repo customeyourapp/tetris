@@ -51,7 +51,7 @@ public class TetrisView extends View {
         new Thread(()->{
             while(true){
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(400);
                     if(grid.getMovingShape() == null){
                         createNewShape();
                     }else{
@@ -84,10 +84,32 @@ public class TetrisView extends View {
     }
     private void shapeMoveDown(){
         Shape movingShape = grid.getMovingShape();
-        movingShape.setY(movingShape.getY() - 1);
+        movingShape.setY(movingShape.getY() + 1);
+        for (Block block : movingShape.getBlocks()) {
+            if (isTouchLowestLine(movingShape.getX(), movingShape.getY() + block.getRelativeY(), block)) {
+                placeShape(movingShape);
+                break;
+            }
+        }
     }
-    private boolean isTouchPlacedBlocks(){
+    private boolean isTouchLowestLine(int x,int y,Block block){
+        if(x+block.getRelativeX()<GridType.GRID_WIDTH)
+            return grid.getLowestLine().get(x + block.getRelativeX()) == y;
         return false;
+    }
+    private void placeShape(Shape movingShape){
+        movingShape.getBlocks().forEach(block -> {
+            block.setRelativeX(movingShape.getX()+block.getRelativeX());
+            block.setRelativeY(movingShape.getY()+block.getRelativeY());
+            updateLowestLine(block);
+            grid.addPlacedBlocks(block);
+            grid.setMovingShape(null);
+        });
+    }
+    private void updateLowestLine(Block block){
+        if(block.getRelativeY()-1<grid.getLowestLine().get(block.getRelativeX())){
+            grid.setLowestLine(block.getRelativeX(),block.getRelativeY()-1);
+        }
     }
 
     @Override
@@ -117,23 +139,24 @@ public class TetrisView extends View {
     }
     private void drawBlocksAndShapes(Canvas canvas){
         if(grid.getPlacedBlocks() != null) {
-            grid.getPlacedBlocks().forEach(block -> drawBlock(canvas, block, 0, 0));
+            if(!grid.getPlacedBlocks().isEmpty())
+                grid.getPlacedBlocks().forEach(block ->
+                    drawBlock(canvas, block, 0, 0));
         }
         Shape movingShape = grid.getMovingShape();
         if(movingShape != null){
-            movingShape.getBlocks().forEach(block -> drawBlock(canvas,block,movingShape.getX(),movingShape.getY()));
+            movingShape.getBlocks().forEach(block ->
+                    drawBlock(canvas,block,movingShape.getX(),movingShape.getY()));
         }
     }
     private void drawBlock(Canvas canvas, Block block,int offsetX,int offsetY){
-        if(block.getRelativeX()+offsetX >= GridType.GRID_WIDTH ||
-        block.getRelativeY()+offsetY >= GridType.GRID_HEIGHT)
-            return;
+
         paint.setColor(ContextCompat.getColor(getContext(),block.getColorID()));
         canvas.drawRect(
                 (block.getRelativeX()+offsetX)*blockWidth,
-                (GridType.GRID_HEIGHT-block.getRelativeY()-offsetY)*blockHeight,
+                (block.getRelativeY()+offsetY)*blockHeight,
                 (block.getRelativeX()+1+offsetX)*blockWidth,
-                (GridType.GRID_HEIGHT-block.getRelativeY()-1-offsetY)*blockHeight,
+                (block.getRelativeY()-1+offsetY)*blockHeight,
                 paint);
     }
 

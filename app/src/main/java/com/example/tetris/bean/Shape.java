@@ -8,6 +8,11 @@ public class Shape {
     protected int x;
     protected int y;
 
+    protected Shape(int x){
+        this.x = x;
+        this.y = 0;
+    }
+
     public int getX() {
         return x;
     }
